@@ -1,0 +1,15 @@
+[package]
+name = "phrace"
+version = "0.1.0"
+edition = "2021"
+authors = ["Marieke Westendorp <ma3ke.cyber@gmail.com>"]
+repository = "https://github.com/koenwestendorp/phrace/"
+keywords = ["plotting", "xvg", "molecular-dynamics", "gromacs", "grace"]
+categories = ["science", "visualization"]
+license = "MIT"
+description = """
+Terminal graph viewer for xvg files.
+"""
+
+[dependencies]
+terminal_size = "0.3.0"
