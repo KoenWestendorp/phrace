@@ -16,7 +16,7 @@ If you don't have [Rust](https://www.rust-lang.org/) installed on your system, l
 To install the binary, run the following command.
 
 ```console
-cargo install --git https://github.com/koenwestendorp/phrace
+cargo install phrace
 ```
 
 ## Usage
