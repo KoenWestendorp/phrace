@@ -433,7 +433,7 @@ fn usage(bin: &str) {
     eprintln!("    --height  -h    Explicitly set height.");
     eprintln!("                    Width and/or height are determined from terminal size at");
     eprintln!("                    runtime, if not specified explicitly.");
-    eprintln!("    --help    -h    Display help.");
+    eprintln!("    --help          Display help.");
     eprintln!();
     eprintln!("{BIN} {VERSION} by {AUTHORS}, 2023.");
 }
@@ -464,7 +464,7 @@ fn parse_args() -> Result<Args, lexopt::Error> {
             Arg::Value(val) if path.is_none() => {
                 path = Some(val.string()?);
             }
-            Arg::Short('h') | Arg::Long("help") => {
+            Arg::Long("help") => {
                 usage(parser.bin_name().unwrap_or(env!("CARGO_BIN_NAME")));
                 std::process::exit(0);
             }
