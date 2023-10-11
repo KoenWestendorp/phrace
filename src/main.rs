@@ -421,9 +421,19 @@ fn usage(bin: &str) {
     const BIN: &str = env!("CARGO_BIN_NAME");
     const AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
     const VERSION: &str = env!("CARGO_PKG_VERSION");
-    eprintln!("Please specify an xvg input path.");
-    eprintln!("Usage: {bin} --help");
-    eprintln!("Usage: {bin} [--style=STYLE] PATH");
+    eprintln!("Display xvg plots in the terminal");
+    eprintln!();
+    eprintln!("Usage:");
+    eprintln!("    {bin} [OPTIONS] PATH");
+    eprintln!();
+    eprintln!("Options:");
+    eprintln!("    --style   -s    Set the drawing style.");
+    eprintln!("                    ascii, block (default)");
+    eprintln!("    --width   -w    Explicitly set width.");
+    eprintln!("    --height  -h    Explicitly set height.");
+    eprintln!("                    Width and/or height are determined from terminal size at");
+    eprintln!("                    runtime, if not specified explicitly.");
+    eprintln!("    --help    -h    Display help.");
     eprintln!();
     eprintln!("{BIN} {VERSION} by {AUTHORS}, 2023.");
 }
@@ -471,7 +481,14 @@ fn parse_args() -> Result<Args, lexopt::Error> {
 }
 
 fn main() -> std::io::Result<()> {
-    let args = parse_args().unwrap();
+    let args = match parse_args() {
+        Ok(args) => args,
+        Err(err) => {
+            eprintln!("ERROR: {err}");
+            eprintln!("Run with --help for usage information.");
+            std::process::exit(1);
+        }
+    };
     let mut file = std::fs::File::open(args.path)?;
     let mut xvg = String::new();
     file.read_to_string(&mut xvg)?;
