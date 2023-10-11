@@ -105,11 +105,18 @@ impl Data {
             let values = line
                 .trim()
                 .split_ascii_whitespace()
-                // We unwrap here because we want it to fail spectacularly.
-                .map(|v| v.parse::<f32>().unwrap());
+                // If there are any items that cannot be parsed as floats, we ignore them. In case
+                // of Ramachandran plots, the last column represents the specific residue that the
+                // preceding x and y are associated with. We don't do anything with the residue
+                // information, so we can discard it.
+                // FIXME: What happens if there happens to be a row that for some other reason has
+                // an non-float value and thus leads to a reading frame shift? For now, see the
+                // debug_assert_eq below.
+                .map(|v| v.parse::<f32>()).flatten();
             if cols.is_none() {
                 cols = Some(values.clone().count())
             }
+            debug_assert_eq!(values.clone().count(), cols.unwrap());
             array.extend(values);
 
             rows += 1;
