@@ -112,7 +112,8 @@ impl Data {
                 // FIXME: What happens if there happens to be a row that for some other reason has
                 // an non-float value and thus leads to a reading frame shift? For now, see the
                 // debug_assert_eq below.
-                .map(|v| v.parse::<f32>()).flatten();
+                .map(|v| v.parse::<f32>())
+                .flatten();
             if cols.is_none() {
                 cols = Some(values.clone().count())
             }
@@ -274,6 +275,39 @@ impl Iterator for DataView<'_> {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+enum DrawingMethod {
+    /// Draw using simple ASCII characters.
+    Ascii,
+    /// Draw using five box drawing characters of varying shade.
+    Block,
+}
+
+impl DrawingMethod {
+    fn draw(&self, hi: usize, lo: usize, v: usize) -> char {
+        match self {
+            DrawingMethod::Ascii => {
+                if v > 0 {
+                    const PALETTE: &[u8; 9] = b".:-=+*#%@";
+                    let idx = (PALETTE.len() - 1) * (v - lo) / (hi - lo).max(1);
+                    PALETTE[idx] as char
+                } else {
+                    ' '
+                }
+            }
+            DrawingMethod::Block => {
+                if v > 0 {
+                    const PALETTE: [char; 4] = ['░', '▒', '▓', '█'];
+                    let idx = (PALETTE.len() - 1) * (v - lo) / (hi - lo).max(1);
+                    PALETTE[idx] as char
+                } else {
+                    ' '
+                }
+            }
+        }
+    }
+}
+
 fn graph(data: &Data, width: u16, height: u16) {
     assert!(width > 2);
     assert!(height > 3);
@@ -312,14 +346,9 @@ fn graph(data: &Data, width: u16, height: u16) {
     let mut graph_rows = Vec::with_capacity(graph_height);
     for row in screen {
         let mut line = String::with_capacity(row.len());
-        for &col in row.iter().rev() {
-            if col > 0 {
-                const PALETTE: &[u8; 9] = b".:-=+*#%@";
-                let idx = (PALETTE.len() - 1) * (col - lo) / (hi - lo).max(1);
-                line.push(PALETTE[idx] as char)
-            } else {
-                line.push(' ')
-            }
+        for &v in row.iter().rev() {
+            let ch = DrawingMethod::Block.draw(hi, lo, v);
+            line.push(ch);
         }
         graph_rows.push(line)
     }
