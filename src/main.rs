@@ -113,8 +113,7 @@ impl Data {
                 // FIXME: What happens if there happens to be a row that for some other reason has
                 // an non-float value and thus leads to a reading frame shift? For now, see the
                 // debug_assert_eq below.
-                .map(|v| v.parse::<f32>())
-                .flatten();
+                .flat_map(|v| v.parse::<f32>());
             if cols.is_none() {
                 cols = Some(values.clone().count())
             }
