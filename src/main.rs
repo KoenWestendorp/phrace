@@ -1,5 +1,6 @@
 use std::io::Read;
 
+use lexopt::{Arg, ValueExt};
 use terminal_size::{terminal_size, Height, Width};
 
 #[derive(Debug, Clone)]
@@ -275,22 +276,23 @@ impl Iterator for DataView<'_> {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 enum DrawingMethod {
     /// Draw using simple ASCII characters.
     Ascii,
+    #[default]
     /// Draw using five box drawing characters of varying shade.
     Block,
 }
 
 impl DrawingMethod {
     fn draw(&self, hi: usize, lo: usize, v: usize) -> char {
+        let idx = |pal_len, hi, lo, v|  (pal_len - 1) * (v - lo) / usize::max(hi - lo, 1);
         match self {
             DrawingMethod::Ascii => {
                 if v > 0 {
                     const PALETTE: &[u8; 9] = b".:-=+*#%@";
-                    let idx = (PALETTE.len() - 1) * (v - lo) / (hi - lo).max(1);
-                    PALETTE[idx] as char
+                    PALETTE[idx(PALETTE.len(), hi, lo, v)] as char
                 } else {
                     ' '
                 }
@@ -298,8 +300,7 @@ impl DrawingMethod {
             DrawingMethod::Block => {
                 if v > 0 {
                     const PALETTE: [char; 4] = ['░', '▒', '▓', '█'];
-                    let idx = (PALETTE.len() - 1) * (v - lo) / (hi - lo).max(1);
-                    PALETTE[idx] as char
+                    PALETTE[idx(PALETTE.len(), hi, lo, v)]
                 } else {
                     ' '
                 }
@@ -308,7 +309,19 @@ impl DrawingMethod {
     }
 }
 
-fn graph(data: &Data, width: u16, height: u16) {
+impl TryFrom<String> for DrawingMethod {
+    type Error = &'static str;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.as_str() {
+            "ascii" => Ok(Self::Ascii),
+            "block" => Ok(Self::Block),
+            _ => Err("unknown drawing style"),
+        }
+    }
+}
+
+fn graph(data: &Data, method: DrawingMethod, width: u16, height: u16) {
     assert!(width > 2);
     assert!(height > 3);
     let width = width as usize;
@@ -347,7 +360,7 @@ fn graph(data: &Data, width: u16, height: u16) {
     for row in screen {
         let mut line = String::with_capacity(row.len());
         for &v in row.iter().rev() {
-            let ch = DrawingMethod::Block.draw(hi, lo, v);
+            let ch = method.draw(hi, lo, v);
             line.push(ch);
         }
         graph_rows.push(line)
@@ -410,19 +423,57 @@ fn usage(bin: &str) {
     const AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
     const VERSION: &str = env!("CARGO_PKG_VERSION");
     eprintln!("Please specify an xvg input path.");
-    eprintln!("Usage: {bin} <input>");
+    eprintln!("Usage: {bin} --help");
+    eprintln!("Usage: {bin} [--style=STYLE] PATH");
     eprintln!();
     eprintln!("{BIN} {VERSION} by {AUTHORS}, 2023.");
 }
 
+struct Args {
+    path: String,
+    method: DrawingMethod,
+    width: Option<u16>,
+    height: Option<u16>,
+}
+
+fn parse_args() -> Result<Args, lexopt::Error> {
+    let mut path = None;
+    let mut style = DrawingMethod::default();
+    let mut width = None;
+    let mut height = None;
+
+    let mut parser = lexopt::Parser::from_env();
+    while let Some(arg) = parser.next()? {
+        match arg {
+            Arg::Short('s') | Arg::Long("style") => style = parser.value()?.string()?.try_into()?,
+            Arg::Short('w') | Arg::Long("width") if width.is_none() => {
+                width = Some(parser.value()?.parse()?)
+            }
+            Arg::Short('h') | Arg::Long("height") if height.is_none() => {
+                height = Some(parser.value()?.parse()?)
+            }
+            Arg::Value(val) if path.is_none() => {
+                path = Some(val.string()?);
+            }
+            Arg::Short('h') | Arg::Long("help") => {
+                usage(parser.bin_name().unwrap_or(env!("CARGO_BIN_NAME")));
+                std::process::exit(0);
+            }
+            _ => return Err(arg.unexpected()),
+        }
+    }
+
+    Ok(Args {
+        path: path.ok_or("missing argument PATH")?,
+        method: style,
+        width,
+        height,
+    })
+}
+
 fn main() -> std::io::Result<()> {
-    let mut args = std::env::args();
-    let bin = args.next().unwrap_or("dith".to_string());
-    let Some(path) = args.next() else {
-        usage(&bin);
-        std::process::exit(1);
-    };
-    let mut file = std::fs::File::open(path)?;
+    let args = parse_args().unwrap();
+    let mut file = std::fs::File::open(args.path)?;
     let mut xvg = String::new();
     file.read_to_string(&mut xvg)?;
 
@@ -430,15 +481,23 @@ fn main() -> std::io::Result<()> {
     let data = Data::from_xvg(&xvg);
 
     // Present the graph :)
-    let size = terminal_size();
-    if let Some((Width(width), Height(height))) = size {
-        if width < 5 || height < 7 {
-            eprintln!("Terminal window is too small to present a meaningful graph.");
-        } else {
-            graph(&data, width, height - 2);
+    match (args.width, args.height, terminal_size()) {
+        // We deal with the following cases, here:
+        // * Both width and height were provided.
+        // * Width was provided, height is determined by terminal size.
+        // * Height was provided, width is determined by terminal size.
+        // * No sizes were provided, both width and height are determined by terminal size.
+        (Some(w), Some(h), _)
+        | (None, Some(h), Some((Width(w), _)))
+        | (Some(w), None, Some((_, Height(h))))
+        | (None, None, Some((Width(w), Height(h)))) => {
+            if w < 5 || h < 7 {
+                eprintln!("Size is too small to present a meaningful graph.");
+            } else {
+                graph(&data, args.method, w, h - 2);
+            }
         }
-    } else {
-        eprintln!("Unable to get terminal size.");
+        (_, _, None) => eprintln!("Unable to get terminal size."),
     }
 
     // Nice little summary of the data.
