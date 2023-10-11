@@ -276,7 +276,7 @@ impl Iterator for DataView<'_> {
 }
 
 #[derive(Debug, Default, Clone, Copy)]
-enum DrawingMethod {
+enum DrawingStyle {
     /// Draw using simple ASCII characters.
     Ascii,
     #[default]
@@ -284,11 +284,11 @@ enum DrawingMethod {
     Block,
 }
 
-impl DrawingMethod {
+impl DrawingStyle {
     fn draw(&self, hi: usize, lo: usize, v: usize) -> char {
         let idx = |pal_len, hi, lo, v|  (pal_len - 1) * (v - lo) / usize::max(hi - lo, 1);
         match self {
-            DrawingMethod::Ascii => {
+            DrawingStyle::Ascii => {
                 if v > 0 {
                     const PALETTE: &[u8; 9] = b".:-=+*#%@";
                     PALETTE[idx(PALETTE.len(), hi, lo, v)] as char
@@ -296,7 +296,7 @@ impl DrawingMethod {
                     ' '
                 }
             }
-            DrawingMethod::Block => {
+            DrawingStyle::Block => {
                 if v > 0 {
                     const PALETTE: [char; 4] = ['░', '▒', '▓', '█'];
                     PALETTE[idx(PALETTE.len(), hi, lo, v)]
@@ -308,7 +308,7 @@ impl DrawingMethod {
     }
 }
 
-impl TryFrom<String> for DrawingMethod {
+impl TryFrom<String> for DrawingStyle {
     type Error = &'static str;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -320,7 +320,7 @@ impl TryFrom<String> for DrawingMethod {
     }
 }
 
-fn graph(data: &Data, method: DrawingMethod, width: u16, height: u16) {
+fn graph(data: &Data, style: DrawingStyle, width: u16, height: u16) {
     assert!(width > 2);
     assert!(height > 3);
     let width = width as usize;
@@ -359,7 +359,7 @@ fn graph(data: &Data, method: DrawingMethod, width: u16, height: u16) {
     for row in screen {
         let mut line = String::with_capacity(row.len());
         for &v in row.iter().rev() {
-            let ch = method.draw(hi, lo, v);
+            let ch = style.draw(hi, lo, v);
             line.push(ch);
         }
         graph_rows.push(line)
@@ -430,14 +430,14 @@ fn usage(bin: &str) {
 
 struct Args {
     path: String,
-    method: DrawingMethod,
+    style: DrawingStyle,
     width: Option<u16>,
     height: Option<u16>,
 }
 
 fn parse_args() -> Result<Args, lexopt::Error> {
     let mut path = None;
-    let mut style = DrawingMethod::default();
+    let mut style = DrawingStyle::default();
     let mut width = None;
     let mut height = None;
 
@@ -464,7 +464,7 @@ fn parse_args() -> Result<Args, lexopt::Error> {
 
     Ok(Args {
         path: path.ok_or("missing argument PATH")?,
-        method: style,
+        style,
         width,
         height,
     })
@@ -493,7 +493,7 @@ fn main() -> std::io::Result<()> {
             if w < 5 || h < 7 {
                 eprintln!("Size is too small to present a meaningful graph.");
             } else {
-                graph(&data, args.method, w, h - 2);
+                graph(&data, args.style, w, h - 2);
             }
         }
         (_, _, None) => eprintln!("Unable to get terminal size."),
