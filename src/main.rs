@@ -123,6 +123,9 @@ impl Data {
             rows += 1;
         }
 
+        // We do not need any of the unused but allocated capacity. Give it back to the system.
+        array.shrink_to_fit();
+
         Self {
             attributes,
             cols: cols.unwrap_or(0),
