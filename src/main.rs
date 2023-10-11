@@ -286,7 +286,7 @@ enum DrawingStyle {
 
 impl DrawingStyle {
     fn draw(&self, hi: usize, lo: usize, v: usize) -> char {
-        let idx = |pal_len, hi, lo, v|  (pal_len - 1) * (v - lo) / usize::max(hi - lo, 1);
+        let idx = |pal_len, hi, lo, v| (pal_len - 1) * (v - lo) / usize::max(hi - lo, 1);
         match self {
             DrawingStyle::Ascii => {
                 if v > 0 {
