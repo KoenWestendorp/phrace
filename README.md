@@ -123,7 +123,8 @@ In other words: contributions and collaboration welcome.
 
 ## Dependencies
 
-Depends on the [`terminal_size`](https://crates.io/crates/terminal_size) crate for decoding and encoding many formats.
+Depends on the [`terminal_size`](https://crates.io/crates/terminal_size) crate for getting the width and height of the terminal.
+Depends on the [`lexopt`](https://crates.io/crates/lexopt) crate for parsing command line arguments.
 No other dependencies.
 
 ---
