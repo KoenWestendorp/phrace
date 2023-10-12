@@ -273,6 +273,8 @@ enum DrawingStyle {
     #[default]
     /// Draw using five box drawing characters of varying shade.
     Block,
+    Binary,
+    BlackWhite,
 }
 
 impl DrawingStyle {
@@ -313,6 +315,8 @@ impl TryFrom<String> for DrawingStyle {
         match value.as_str() {
             "ascii" => Ok(Self::Ascii),
             "block" => Ok(Self::Block),
+            "binary" => Ok(Self::Binary),
+            "blackwhite" | "bw" => Ok(Self::BlackWhite),
             _ => Err("unknown drawing style"),
         }
     }
