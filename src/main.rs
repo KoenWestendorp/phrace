@@ -335,7 +335,7 @@ fn graph(data: &Data, style: DrawingStyle, width: u16, height: u16) {
     let xs = data.col(0);
     let ys = data.col(1);
 
-    let map = |min, max, a, size| (((a - max) * (size - 1) as f32) / (min - max)) as usize;
+    let map = |min, max, a, size| (((max - a + 1.0) * (size - 1) as f32) / (max - min)) as usize;
     let max_x = xs.max_value();
     let min_x = xs.min_value();
     let to_screen_x = |x| map(min_x, max_x, x, graph_width);
