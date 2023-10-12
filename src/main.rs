@@ -336,19 +336,21 @@ fn graph(data: &Data, style: DrawingStyle, width: u16, height: u16) {
     let ys = data.col(1);
 
     let map = |min, max, a, size| (((max - a + 1.0) * (size - 1) as f32) / (max - min)) as usize;
-    let max_x = xs.max_value();
-    let min_x = xs.min_value();
-    let to_screen_x = |x| map(min_x, max_x, x, graph_width);
-    let max_y = ys.max_value();
-    let min_y = ys.min_value();
-    let to_screen_y = |y| map(min_y, max_y, y, graph_height);
+    let to_screen_x = {
+        let max_x = xs.max_value();
+        let min_x = xs.min_value();
+        move |x| map(min_x, max_x, x, graph_width)
+    };
+    let to_screen_y = {
+        let max_y = ys.max_value();
+        let min_y = ys.min_value();
+        move |y| map(min_y, max_y, y, graph_height)
+    };
 
     let mut screen = vec![vec![0; graph_width]; graph_height];
 
     for (x, y) in xs.zip(ys) {
-        let screen_x = to_screen_x(x);
-        let screen_y = to_screen_y(y);
-        screen[screen_y][screen_x] += 1;
+        screen[to_screen_y(y)][to_screen_x(x)] += 1;
     }
 
     let hi = *screen
