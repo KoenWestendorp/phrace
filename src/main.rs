@@ -276,25 +276,32 @@ enum DrawingStyle {
 }
 
 impl DrawingStyle {
-    fn draw(&self, hi: usize, lo: usize, v: usize) -> char {
-        let idx = |pal_len, hi, lo, v| (pal_len - 1) * (v - lo) / usize::max(hi - lo, 1);
+    const fn palette(self) -> &'static [char] {
         match self {
-            DrawingStyle::Ascii => {
-                if v > 0 {
-                    const PALETTE: &[u8; 9] = b".:-=+*#%@";
-                    PALETTE[idx(PALETTE.len(), hi, lo, v)] as char
-                } else {
-                    ' '
-                }
-            }
-            DrawingStyle::Block => {
-                if v > 0 {
-                    const PALETTE: [char; 4] = ['░', '▒', '▓', '█'];
-                    PALETTE[idx(PALETTE.len(), hi, lo, v)]
-                } else {
-                    ' '
-                }
-            }
+            // ' .:-=+*#%@'
+            Self::Ascii => [' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'].as_slice(),
+            // ' ░▒▓█'
+            Self::Block => [' ', '░', '▒', '▓', '█'].as_slice(),
+            // '01'
+            Self::Binary => ['0', '1'].as_slice(),
+            // ' █'
+            Self::BlackWhite => [' ', '█'].as_slice(),
+        }
+    }
+}
+
+impl DrawingStyle {
+    fn draw(&self, hi: usize, lo: usize, v: usize) -> char {
+        let pal = self.palette();
+        if v == 0 {
+            pal[0]
+        } else {
+            // let idx = |pal_len, hi, lo, v| (pal_len - 1) * (v - lo) / usize::max(hi - lo, 1);
+            let idx = |pal_len, hi, lo, v| {
+                let r = (v - lo) as f32 / (hi - lo) as f32;
+                ((pal_len as f32 - 1.0) * r) as usize
+            };
+            pal[idx(pal.len() - 1, hi, lo, v) + 1]
         }
     }
 }
