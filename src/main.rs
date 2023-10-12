@@ -223,25 +223,13 @@ impl DataView<'_> {
     /// Maximum value in the view.
     pub fn max_value(&self) -> f32 {
         // TODO: We assume that the view is not empty. That can lead to unexpected results.
-        let mut max = f32::NEG_INFINITY;
-        for v in *self {
-            if v > max {
-                max = v
-            }
-        }
-        max
+        self.fold(f32::NEG_INFINITY, |prev, curr| if prev < curr { curr } else { prev })
     }
 
     /// Minimum value in the view.
     pub fn min_value(&self) -> f32 {
         // TODO: We assume that the view is not empty. That can lead to unexpected results.
-        let mut min = f32::INFINITY;
-        for v in *self {
-            if v < min {
-                min = v
-            }
-        }
-        min
+        self.fold(f32::INFINITY, |prev, curr| if prev > curr { curr } else { prev })
     }
 }
 
