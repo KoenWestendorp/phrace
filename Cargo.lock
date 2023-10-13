@@ -58,7 +58,7 @@ checksum = "45786cec4d5e54a224b15cb9f06751883103a27c19c93eda09b0b4f5f08fefac"
 
 [[package]]
 name = "phrace"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "lexopt",
  "terminal_size",
