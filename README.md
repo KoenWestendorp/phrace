@@ -1,5 +1,7 @@
 # phrace
 
+_**NOTE:** This repository has been moved to [git.sr.ht/~ma3ke/phrace](https://git.sr.ht/~ma3ke/phrace)._
+
 ![A bunch of terminal windows showing the tool in action. A Grace window is also shown displaying the same (energy minimization) potential energy data as the terminal that sits above it, for comparison.](screenshot.png)
 
 A terminal viewer for `.xvg` files.
